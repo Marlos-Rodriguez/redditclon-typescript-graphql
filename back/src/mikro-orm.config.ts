@@ -8,6 +8,8 @@ const mikroConfig: Parameters<typeof MikroORM.init>[0] = {
   entities: [Post],
   dbName: "lireddit",
   type: "postgresql",
+  user: "postgres",
+  password: "mysecretpassword",
   debug: !__prod__,
   migrations: {
     path: path.join(__dirname, "./migrations"), // path to the folder with migrations
