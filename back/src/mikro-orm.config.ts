@@ -1,5 +1,5 @@
 import { __prod__ } from "./constrants";
-import { Post } from "./entities/Post";
+import { Post } from "./entities/post";
 import { MikroORM } from "@mikro-orm/core";
 
 import path from "path";
