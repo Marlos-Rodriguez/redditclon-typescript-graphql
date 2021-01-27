@@ -1,11 +1,14 @@
 import { __prod__ } from "./constrants";
+
 import { Post } from "./entities/post";
+import { User } from "./entities/user";
+
 import { MikroORM } from "@mikro-orm/core";
 
 import path from "path";
 
 const mikroConfig: Parameters<typeof MikroORM.init>[0] = {
-  entities: [Post],
+  entities: [Post, User],
   dbName: "lireddit",
   type: "postgresql",
   user: "postgres",
