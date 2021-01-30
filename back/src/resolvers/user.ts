@@ -7,7 +7,7 @@ import argon2 from "argon2";
 @InputType()
 class UserInput {
   @Field()
-  usermame: string;
+  username: string;
 
   @Field()
   password: string;
@@ -34,22 +34,47 @@ class UserResponse {
 @Resolver()
 export class UserResolver {
   //Register User
-  @Mutation(() => User)
-  async register(@Ctx() { em }: MyContext, @Arg("options") options: UserInput): Promise<User> {
+  @Mutation(() => UserResponse)
+  async register(
+    @Ctx() { em }: MyContext,
+    @Arg("options") options: UserInput
+  ): Promise<UserResponse> {
+    if (options.username.length <= 2) {
+      return {
+        errors: [{ field: "username", message: "Username must be at least 2 characters long" }],
+      };
+    }
+
+    if (options.password.length < 6) {
+      return {
+        errors: [{ field: "password", message: "Password must be at least 6 characters long" }],
+      };
+    }
     const hashPassword = await argon2.hash(options.password);
 
     const user = em.create(User, {
-      username: options.usermame.toLocaleLowerCase(),
+      username: options.username.toLocaleLowerCase(),
       password: hashPassword,
     });
-    await em.persistAndFlush(user);
+    try {
+      await em.persistAndFlush(user);
+    } catch (error) {
+      if (
+        error.code === "23505" ||
+        error.detail.includes("already exists" || error.message.includes("duplicate key value"))
+      ) {
+        return {
+          errors: [{ field: "username", message: "Username Already Exits" }],
+        };
+      }
+    }
 
-    return user;
+    return { user };
   }
   //Login User
   @Mutation(() => UserResponse)
   async login(@Ctx() { em }: MyContext, @Arg("options") options: UserInput): Promise<UserResponse> {
-    const user = await em.findOneOrFail(User, { username: options.usermame.toLocaleLowerCase() });
+    const user = await em.findOne(User, { username: options.username.toLocaleLowerCase() });
 
     if (!user) {
       return {
