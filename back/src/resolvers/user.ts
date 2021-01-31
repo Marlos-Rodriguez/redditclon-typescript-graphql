@@ -1,4 +1,4 @@
-import { Arg, Ctx, Field, InputType, Mutation, ObjectType, Resolver } from "type-graphql";
+import { Arg, Ctx, Field, InputType, Mutation, ObjectType, Resolver, Query } from "type-graphql";
 import { MyContext } from "../types";
 import { User } from "../entities/user";
 
@@ -33,10 +33,24 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Query(() => User, { nullable: true })
+  async me(@Ctx() { em, req }: MyContext): Promise<User | null> {
+    if (!req.session.userId) {
+      return null;
+    }
+
+    const user = await em.findOne(User, { id: req.session.userId });
+
+    if (!user) {
+      return null;
+    }
+
+    return user;
+  }
   //Register User
   @Mutation(() => UserResponse)
   async register(
-    @Ctx() { em }: MyContext,
+    @Ctx() { em, req }: MyContext,
     @Arg("options") options: UserInput
   ): Promise<UserResponse> {
     if (options.username.length <= 2) {
@@ -69,11 +83,16 @@ export class UserResolver {
       }
     }
 
+    req.session.userId = user.id;
+
     return { user };
   }
   //Login User
   @Mutation(() => UserResponse)
-  async login(@Ctx() { em }: MyContext, @Arg("options") options: UserInput): Promise<UserResponse> {
+  async login(
+    @Ctx() { em, req }: MyContext,
+    @Arg("options") options: UserInput
+  ): Promise<UserResponse> {
     const user = await em.findOne(User, { username: options.username.toLocaleLowerCase() });
 
     if (!user) {
@@ -99,6 +118,8 @@ export class UserResolver {
         ],
       };
     }
+
+    req.session.userId = user.id;
 
     return { user };
   }
